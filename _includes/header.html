@@ -1,0 +1,32 @@
+<div class="header">
+  <div class="title">{{ page.title }}</div>
+  <nav>
+    <a href="/"><button>Home</button></a>
+    <div class="dropdown">
+      <button>Categories</button>
+      <div class="dropdown-content">
+        {% for category in site.categories %}
+        {% capture category_name %}{{ category | first }}{% endcapture %}
+        <a href="/{{ category_name }}">{{ category_name }}</a>
+        {% endfor %}
+      </div>
+    </div>
+    {% for collection in site.collections %}
+    {% if collection.label != 'posts' %}
+    <div class="dropdown">
+      {% if collection.label != 'sanguo' %}
+      <button>{{ collection.label }}</button>
+      {% else %}
+      <button>三国志</button>
+      {% endif %}
+      <div class="dropdown-content">
+        {% for post in site.[collection.label] %}
+        <a href="{{ post.url }}">{{ post.title }}</a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+    <a href="/about"><button>About</button></a>
+  </nav>
+</div>
