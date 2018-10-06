@@ -1,2 +1,6 @@
 title:       Earon
 description: Earon.
+collections:
+  aomori:
+    title: Aomori
+    output: true
