@@ -85,7 +85,7 @@ div.bg {
   background-position: center;
   background-size: cover;
 }
-div.default 
+div.default {
   width: 100%;
   transition: opacity .75s;
   z-index: 999;

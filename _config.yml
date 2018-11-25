@@ -1,6 +1,9 @@
 title:       Earon
 description: Earon.
 collections:
+  filo:
+    title: Filo
+    output: true
   aomori:
     title: Aomori
     output: true

@@ -200,6 +200,10 @@ ul {
   text-indent: 32px;
   text-align: justify;
 }
+.text li a {
+  color: #23d;
+  margin-right: 5px;
+}
 .index {
   padding-inline-start: 0;
 }
