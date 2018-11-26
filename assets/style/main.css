@@ -99,7 +99,6 @@ ul {
   padding: 12px;
 }
 .dropdown .dropdown-content a:hover {
-  border: 2px solid darkred;
   border-bottom: 0;
   border-top: 0;
   background-color: maroon;
@@ -200,8 +199,10 @@ ul {
   text-indent: 32px;
   text-align: justify;
 }
-.text li a {
+.text a {
   color: #23d;
+}
+.text li a {
   margin-right: 5px;
 }
 .index {
