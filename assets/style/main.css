@@ -205,6 +205,11 @@ ul {
 .text li a {
   margin-right: 5px;
 }
+.text img {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+}
 .index {
   padding-inline-start: 0;
 }
