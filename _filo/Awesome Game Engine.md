@@ -6,10 +6,13 @@ index: true
 
 ## go
 
+* [ebiten](https://github.com/hajimehoshi/ebiten)
+A dead simple 2D game library in Go https://ebiten.org/
+
 * [engo](https://github.com/EngoEngine/engo)
 Engo is an open-source 2D game engine written in Go.
 
-*[korok](https://github.com/KorokEngine/Korok)
+* [korok](https://github.com/KorokEngine/Korok)
 korok.io - golang game engine.
 
 ## javascript
