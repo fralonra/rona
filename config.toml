@@ -1,3 +1,17 @@
-baseURL = "http://example.org/"
+baseURL = "/"
 languageCode = "en-us"
-title = "My New Hugo Site"
+title = "Earon"
+theme = "terminal"
+paginate = 10
+
+[params]
+  author = "Fralonra"
+
+  # ["orange", "blue", "red", "green", "pink"]
+  themeColor = "green"
+
+  # set theme to full screen width
+  fullWidthTheme = false
+
+  # center theme with default width
+  centerTheme = true
