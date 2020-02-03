@@ -5,7 +5,7 @@ author: "Fralonra"
 cover: ""
 tags: ["spacemacs"]
 keywords: ["spacemacs"]
-description: "Some notes on Spacemacs"
+description: "Some notes on Spacemacs."
 showFullContent: false
 ---
 

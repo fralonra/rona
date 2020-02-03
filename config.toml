@@ -15,3 +15,18 @@ paginate = 10
 
   # center theme with default width
   centerTheme = true
+
+[languages]
+  [languages.en]
+    languageName = "English"
+    title = "Earon"
+    subtitle = "Hail Earendil!"
+    keywords = ""
+    copyright = ""
+    menuMore = "Show more"
+    readMore = "Read more"
+    readOtherPosts = "Read other posts"
+
+    [languages.en.params.logo]
+      logoText = "HOME"
+      logoHomeLink = "/"
