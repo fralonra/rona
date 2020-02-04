@@ -7,13 +7,15 @@
   margin: 0;
   padding: 10px;
   list-style: none;
-  z-index: 99;
 }
 
 .header {
   display: flex;
   flex-direction: column;
-  position: relative;
+  position: sticky;
+  top: 0px;
+  background-color: var(--background);
+  z-index: 99;
 
   &__inner {
     display: flex;
@@ -153,6 +155,7 @@
       height: 100%;
       padding: 3px 8px;
       position: relative;
+      cursor: pointer;
     }
   }
 }

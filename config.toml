@@ -28,5 +28,5 @@ paginate = 10
     readOtherPosts = "Read other posts"
 
     [languages.en.params.logo]
-      logoText = "HOME"
+      logoText = "/"
       logoHomeLink = "/"
