@@ -44,6 +44,7 @@ dotspacemacs-configuration-layers
       auto-completion
       emacs-lisp
       (shell :variables
+             shell-default-shell 'eshell
              shell-default-height 30
              shell-default-position 'bottom)
       syntax-checking
