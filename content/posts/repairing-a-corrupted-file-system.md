@@ -1,11 +1,11 @@
 ---
-title: "Reparing a corrupted file system"
+title: "Repairing a corrupted file system"
 date: 2020-02-05T21:56:20+08:00
 author: "Fralonra"
 cover: ""
 tags: ["linux"]
 keywords: ["linux", "file system"]
-description: "Reparing a corrupted file system."
+description: "Repairing a corrupted file system."
 showFullContent: false
 ---
 

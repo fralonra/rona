@@ -1,11 +1,11 @@
 ---
-title: "Reparing partition with input/output error"
+title: "Repairing partition with input/output error"
 date: 2020-02-25T17:07:44+08:00
 author: "Fralonra"
 cover: ""
 tags: ["linux"]
 keywords: ["linux", "file system"]
-description: "Reparing partition with input/output error."
+description: "Repairing partition with input/output error."
 showFullContent: false
 ---
 
