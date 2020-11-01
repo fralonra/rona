@@ -19,10 +19,10 @@ I ran `smartctl -a /dev/xxx`, and found this:
 # 2  Extended offline    Completed: read failure       00%     13771         6960152
 ```
 A serious problem might had happened. So I did the following:
-1. Using `ddrescue` to copy the whole partition to an image. I started to work on that backup to avoid doing more damage to the original device.
-1. Making a loop device using `losetup`. Besides, an [overlay file](https://raid.wiki.kernel.org/index.php/Recovering_a_failed_software_RAID#Making_the_harddisks_read-only_using_an_overlay_file) is a much safer option.
+1. Using `ddrescue` to copy the whole partition to an image, eg.: `ddrescure -d -r3 /dev/sdax backup.img backup.logfile` . I started to work on that backup to avoid doing more damage to the original device. 
+1. Making a loop device using `losetup`, eg.: `losetup -fP backup.img`. Then type `losetup -a` to find the newly created device. Besides, an [overlay file](https://raid.wiki.kernel.org/index.php/Recovering_a_failed_software_RAID#Making_the_harddisks_read-only_using_an_overlay_file) is a much safer option.
 1. Trying out methods to fix the issue. I tried `e2fsck` and it worked for me, without any input/output error.
 
-After doing three steps above, the only thing I need to do is copying the fixed image back to the partition. Hurray!
+After doing three steps above, the only thing I need to do is copying the fixed image back to the partition: `ddrescue -f backup.img /dev/sdax restore.logfile`. Hurray!
 
 Moral of this story: keep in mind to backup the valuable data all the time.
