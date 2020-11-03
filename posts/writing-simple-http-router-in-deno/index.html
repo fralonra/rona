@@ -1,0 +1,184 @@
+<!doctype html><html lang=en><head><title>Writing Simple Http Router in Deno :: Earon — Hail Earendil!</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1"><meta name=description content="In this article I would like to share how to implement a simple HTTP router in TypeScript and use it in Deno.
+Noticed that serving for different HTTP methods would not be covered in this article. Instead, we would focus on route matching.
+When you be asked how to implement a HTTP router that can matching URLs with corresponding handlers, which way would come to mind first? Regex? Hash map? Or something else (If any, tell me)?"><meta name=keywords content="deno,typescript,trie,http router"><meta name=robots content="noodp"><link rel=canonical href=/rona/posts/writing-simple-http-router-in-deno/><link rel=apple-touch-icon sizes=57x57 href=/apple-icon-57x57.png><link rel=apple-touch-icon sizes=60x60 href=/apple-icon-60x60.png><link rel=apple-touch-icon sizes=72x72 href=/apple-icon-72x72.png><link rel=apple-touch-icon sizes=76x76 href=/apple-icon-76x76.png><link rel=apple-touch-icon sizes=114x114 href=/apple-icon-114x114.png><link rel=apple-touch-icon sizes=120x120 href=/apple-icon-120x120.png><link rel=apple-touch-icon sizes=144x144 href=/apple-icon-144x144.png><link rel=apple-touch-icon sizes=152x152 href=/apple-icon-152x152.png><link rel=apple-touch-icon sizes=180x180 href=/apple-icon-180x180.png><link rel=icon type=image/png sizes=192x192 href=/android-icon-192x192.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=96x96 href=/favicon-96x96.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/app.webmanifest><meta name=msapplication-TileColor content="#ffffff"><meta name=msapplication-TileImage content="/ms-icon-144x144.png"><meta name=theme-color content="#ffffff"><link rel=stylesheet href=/rona/assets/style.css><link rel=stylesheet href=/rona/assets/green.css><link rel=apple-touch-icon-precomposed sizes=144x144 href=/rona/img/apple-touch-icon-144-precomposed.png><link rel="shortcut icon" href=/rona/img/favicon/green.png><meta name=twitter:card content="summary"><meta name=twitter:title content="Writing Simple Http Router in Deno :: Earon — Hail Earendil!"><meta name=twitter:description content="In this article I would like to share how to implement a simple HTTP router in TypeScript and use it in Deno.
+Noticed that serving for different HTTP methods would not be covered in this article. Instead, we would focus on route matching.
+When you be asked how to implement a HTTP router that can matching URLs with corresponding handlers, which way would come to mind first? Regex? Hash map? Or something else (If any, tell me)?"><meta name=twitter:site content="/rona"><meta name=twitter:creator content="Fralonra"><meta name=twitter:image content><meta property="og:locale" content="en"><meta property="og:type" content="article"><meta property="og:title" content="Writing Simple Http Router in Deno :: Earon — Hail Earendil!"><meta property="og:description" content="In this article I would like to share how to implement a simple HTTP router in TypeScript and use it in Deno.
+Noticed that serving for different HTTP methods would not be covered in this article. Instead, we would focus on route matching.
+When you be asked how to implement a HTTP router that can matching URLs with corresponding handlers, which way would come to mind first? Regex? Hash map? Or something else (If any, tell me)?"><meta property="og:url" content="/rona/posts/writing-simple-http-router-in-deno/"><meta property="og:site_name" content="Writing Simple Http Router in Deno"><meta property="og:image" content><meta property="og:image:width" content="2048"><meta property="og:image:height" content="1024"><meta property="article:published_time" content="2020-06-21 09:53:40 +0800 +0800"></head><body><div class="container center headings--one-size"><header class=header><div class=header__inner><div class=header__logo><a href=/><div class=logo>/</div></a></div><div class=menu-trigger>menu</div></div></header><div class=content><div class=post><h1 class=post-title><a href=/rona/posts/writing-simple-http-router-in-deno/>Writing Simple Http Router in Deno</a></h1><div class=post-meta><span class=post-date>2020-06-21</span>
+<span class=post-author>::
+Fralonra</span></div><span class=post-tags>#<a href=/rona/tags/deno/>deno</a>&nbsp;</span><div class=post-content><div><p>In this article I would like to share how to implement a simple HTTP router in TypeScript and use it in Deno.</p><p>Noticed that serving for different HTTP methods would not be covered in this article. Instead, we would focus on route matching.</p><p>When you be asked how to implement a HTTP router that can matching URLs with corresponding handlers, which way would come to mind first? Regex? Hash map? Or something else (If any, tell me)?</p><h3 id=hash-map>Hash map<a href=#hash-map class=hanchor arialabel=Anchor>&#8983;</a></h3><p>To me, it would be hash map that comes up first. Let&rsquo;s start with a simple example. We would use a map to store all our routes.</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#75715e>// router.ts
+</span><span style=color:#75715e></span><span style=color:#66d9ef>import</span> { <span style=color:#a6e22e>ServerRequest</span> } <span style=color:#66d9ef>from</span> <span style=color:#e6db74>&#39;https://deno.land/std/http/server.ts&#39;</span>
+
+<span style=color:#66d9ef>type</span> <span style=color:#a6e22e>TRotueHandler</span> <span style=color:#f92672>=</span> (<span style=color:#a6e22e>req</span>: <span style=color:#66d9ef>ServerRequest</span>) <span style=color:#f92672>=&gt;</span> <span style=color:#66d9ef>void</span>
+
+<span style=color:#66d9ef>export</span> <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>MapRouter</span> {
+  <span style=color:#960050;background-color:#1e0010>#</span><span style=color:#a6e22e>map</span> <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> <span style=color:#a6e22e>Map</span>&lt;<span style=color:#f92672>string</span><span style=color:#960050;background-color:#1e0010>,</span> <span style=color:#a6e22e>TRotueHandler</span>&gt;()
+
+  <span style=color:#a6e22e>handle</span>(<span style=color:#a6e22e>req</span>: <span style=color:#66d9ef>ServerRequest</span>) {
+    <span style=color:#66d9ef>const</span> <span style=color:#a6e22e>handler</span> <span style=color:#f92672>=</span> <span style=color:#66d9ef>this</span>.<span style=color:#960050;background-color:#1e0010>#</span><span style=color:#a6e22e>map</span>.<span style=color:#66d9ef>get</span>(<span style=color:#a6e22e>req</span>.<span style=color:#a6e22e>url</span>)
+    <span style=color:#66d9ef>if</span> (<span style=color:#a6e22e>handler</span>) {
+      <span style=color:#a6e22e>handler</span>(<span style=color:#a6e22e>req</span>)
+    }
+  }
+
+  <span style=color:#66d9ef>set</span> (<span style=color:#a6e22e>path</span>: <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>handler</span>: <span style=color:#66d9ef>TRotueHandler</span>) {
+    <span style=color:#66d9ef>this</span>.<span style=color:#960050;background-color:#1e0010>#</span><span style=color:#a6e22e>map</span>.<span style=color:#66d9ef>set</span>(<span style=color:#a6e22e>path</span>, <span style=color:#a6e22e>handler</span>)
+  }
+}
+</code></pre></div><p>As the above code shows, we defined a type called <code>TRouteHnadler</code> and a class named <code>Router</code>.</p><p>Then we can use <code>Router</code> in our application:</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#75715e>// app.ts
+</span><span style=color:#75715e></span><span style=color:#66d9ef>import</span> { <span style=color:#a6e22e>serve</span>, <span style=color:#a6e22e>ServerRequest</span> } <span style=color:#66d9ef>from</span> <span style=color:#e6db74>&#39;https://deno.land/std/http/server.ts&#39;</span>
+<span style=color:#66d9ef>import</span> { <span style=color:#a6e22e>MapRouter</span> } <span style=color:#66d9ef>from</span> <span style=color:#e6db74>&#39;./router.ts&#39;</span>
+
+<span style=color:#66d9ef>const</span> <span style=color:#a6e22e>router</span> <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> <span style=color:#a6e22e>MapRouter</span>()
+<span style=color:#a6e22e>router</span>.<span style=color:#66d9ef>set</span>(<span style=color:#e6db74>&#39;/dog&#39;</span>, (<span style=color:#a6e22e>req</span>: <span style=color:#66d9ef>ServerRequest</span>) <span style=color:#f92672>=&gt;</span> {
+  <span style=color:#a6e22e>req</span>.<span style=color:#a6e22e>respond</span>({ <span style=color:#a6e22e>body</span><span style=color:#f92672>:</span> <span style=color:#e6db74>&#39;Hello dog&#39;</span> })
+})
+<span style=color:#a6e22e>router</span>.<span style=color:#66d9ef>set</span>(<span style=color:#e6db74>&#39;/pig&#39;</span>, (<span style=color:#a6e22e>req</span>: <span style=color:#66d9ef>ServerRequest</span>) <span style=color:#f92672>=&gt;</span> {
+  <span style=color:#a6e22e>req</span>.<span style=color:#a6e22e>respond</span>({ <span style=color:#a6e22e>body</span><span style=color:#f92672>:</span> <span style=color:#e6db74>&#39;Hello pig&#39;</span>})
+})
+
+<span style=color:#66d9ef>const</span> <span style=color:#a6e22e>server</span> <span style=color:#f92672>=</span> <span style=color:#a6e22e>serve</span>({ <span style=color:#a6e22e>port</span>: <span style=color:#66d9ef>8000</span> })
+<span style=color:#a6e22e>console</span>.<span style=color:#a6e22e>log</span>(<span style=color:#e6db74>&#34;http://localhost:8000/&#34;</span>)
+
+<span style=color:#66d9ef>for</span> <span style=color:#66d9ef>await</span> (<span style=color:#66d9ef>const</span> <span style=color:#a6e22e>req</span> <span style=color:#66d9ef>of</span> <span style=color:#a6e22e>server</span>) {
+  <span style=color:#a6e22e>router</span>.<span style=color:#a6e22e>handle</span>(<span style=color:#a6e22e>req</span>)
+}
+</code></pre></div><p>Then run the Deno server using the following command:</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>deno run --allow-net app.ts
+</code></pre></div><p>Visit your server and you would recieve different response from different URL! It works as expected!</p><h3 id=trie>Trie<a href=#trie class=hanchor arialabel=Anchor>&#8983;</a></h3><p>Now we have a simple router that could handle static URL requests. The next step is to handle dynamic URLs. That is, you can access the server with something like <code>/dog/:name</code>, where <code>:name</code> represents a dynamic route parameter which could be Buddy, Coco or anything else.</p><p>How can we do that? That&rsquo;s definitely we can&rsquo;t list all the names in our code, and it&rsquo;s a lot of replicated work, and with a big fancy regex also makes us headache!</p><p>It&rsquo;s the right time to use <a href=https://en.wikipedia.org/wiki/Trie>trie</a> rather than map!</p><p>First we would like to define the tree node. Note that we would not handle dynamic URl params right now.</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#75715e>// router.ts
+</span><span style=color:#75715e></span><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>TrieNode</span> {
+  <span style=color:#960050;background-color:#1e0010>#</span><span style=color:#a6e22e>children</span> <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> <span style=color:#a6e22e>Map</span>&lt;<span style=color:#f92672>string</span><span style=color:#960050;background-color:#1e0010>,</span> <span style=color:#a6e22e>TrieNode</span>&gt;()
+  <span style=color:#a6e22e>identifier</span>: <span style=color:#66d9ef>string</span>
+  <span style=color:#a6e22e>handler?</span>: <span style=color:#66d9ef>TRouteHandler</span>
+
+  <span style=color:#66d9ef>constructor</span>(<span style=color:#a6e22e>identifier?</span>: <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>handler?</span>: <span style=color:#66d9ef>TRouteHandler</span>) {
+    <span style=color:#a6e22e>handler</span> <span style=color:#f92672>&amp;&amp;</span> (<span style=color:#66d9ef>this</span>.<span style=color:#a6e22e>handler</span> <span style=color:#f92672>=</span> <span style=color:#a6e22e>handler</span>)
+    <span style=color:#66d9ef>this</span>.<span style=color:#a6e22e>identifier</span> <span style=color:#f92672>=</span> <span style=color:#a6e22e>identifier</span> <span style=color:#f92672>||</span> <span style=color:#e6db74>&#39;/&#39;</span>
+  }
+
+  <span style=color:#a6e22e>addNode</span>(<span style=color:#a6e22e>paths</span>: <span style=color:#66d9ef>string</span>[], <span style=color:#a6e22e>handler</span>: <span style=color:#66d9ef>TRouteHandler</span>) {
+    <span style=color:#66d9ef>const</span> <span style=color:#a6e22e>identifier</span> <span style=color:#f92672>=</span> <span style=color:#a6e22e>paths</span>.<span style=color:#a6e22e>shift</span>() <span style=color:#66d9ef>as</span> <span style=color:#66d9ef>string</span>
+    <span style=color:#66d9ef>let</span> <span style=color:#a6e22e>node</span> <span style=color:#f92672>=</span> <span style=color:#66d9ef>this</span>.<span style=color:#960050;background-color:#1e0010>#</span><span style=color:#a6e22e>children</span>.<span style=color:#66d9ef>get</span>(<span style=color:#a6e22e>identifier</span>)
+    <span style=color:#66d9ef>if</span> (<span style=color:#f92672>!</span><span style=color:#a6e22e>node</span>) {
+      <span style=color:#a6e22e>node</span> <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> <span style=color:#a6e22e>TrieNode</span>(<span style=color:#a6e22e>identifier</span>)
+      <span style=color:#66d9ef>this</span>.<span style=color:#960050;background-color:#1e0010>#</span><span style=color:#a6e22e>children</span>.<span style=color:#66d9ef>set</span>(<span style=color:#a6e22e>identifier</span>, <span style=color:#a6e22e>node</span>)
+    }
+    <span style=color:#66d9ef>if</span> (<span style=color:#f92672>!</span><span style=color:#a6e22e>paths</span>.<span style=color:#a6e22e>length</span>) {
+      <span style=color:#a6e22e>node</span>.<span style=color:#a6e22e>handler</span> <span style=color:#f92672>=</span> <span style=color:#a6e22e>handler</span>
+    }
+    <span style=color:#66d9ef>if</span> (<span style=color:#a6e22e>paths</span>.<span style=color:#a6e22e>length</span>) <span style=color:#a6e22e>node</span>.<span style=color:#a6e22e>addNode</span>(<span style=color:#a6e22e>paths</span>, <span style=color:#a6e22e>handler</span>)
+  }
+
+  <span style=color:#a6e22e>walk</span>(<span style=color:#a6e22e>paths</span>: <span style=color:#66d9ef>string</span>[]) <span style=color:#f92672>:</span> <span style=color:#a6e22e>TrieNode</span> <span style=color:#f92672>|</span> <span style=color:#66d9ef>null</span> {
+    <span style=color:#66d9ef>if</span> (<span style=color:#f92672>!</span><span style=color:#a6e22e>paths</span>.<span style=color:#a6e22e>length</span>) <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>this</span>
+    <span style=color:#66d9ef>const</span> <span style=color:#a6e22e>identifier</span> <span style=color:#f92672>=</span> <span style=color:#a6e22e>paths</span>.<span style=color:#a6e22e>shift</span>() <span style=color:#66d9ef>as</span> <span style=color:#66d9ef>string</span>
+    <span style=color:#66d9ef>const</span> <span style=color:#a6e22e>node</span> <span style=color:#f92672>=</span> <span style=color:#66d9ef>this</span>.<span style=color:#960050;background-color:#1e0010>#</span><span style=color:#a6e22e>children</span>.<span style=color:#66d9ef>get</span>(<span style=color:#a6e22e>identifier</span>)
+    <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>node</span> <span style=color:#f92672>?</span> <span style=color:#a6e22e>node</span>.<span style=color:#a6e22e>walk</span>(<span style=color:#a6e22e>paths</span>) <span style=color:#f92672>:</span> <span style=color:#66d9ef>null</span>
+  }
+}
+</code></pre></div><p>Then the router using the above trie structure:</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#75715e>// router.ts
+</span><span style=color:#75715e></span><span style=color:#66d9ef>export</span> <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>TrieRouter</span> {
+  <span style=color:#960050;background-color:#1e0010>#</span><span style=color:#a6e22e>root</span> <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> <span style=color:#a6e22e>TrieNode</span>()
+  <span style=color:#a6e22e>routeSeperator</span>: <span style=color:#66d9ef>string</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;&#39;</span>
+
+  <span style=color:#a6e22e>handle</span>(<span style=color:#a6e22e>req</span>: <span style=color:#66d9ef>ServerRequest</span>) {
+    <span style=color:#66d9ef>const</span> <span style=color:#a6e22e>node</span> <span style=color:#f92672>=</span> <span style=color:#66d9ef>this</span>.<span style=color:#960050;background-color:#1e0010>#</span><span style=color:#a6e22e>root</span>.<span style=color:#a6e22e>walk</span>(<span style=color:#a6e22e>req</span>.<span style=color:#a6e22e>url</span>.<span style=color:#a6e22e>slice</span>(<span style=color:#ae81ff>1</span>).<span style=color:#a6e22e>split</span>(<span style=color:#66d9ef>this</span>.<span style=color:#a6e22e>routeSeperator</span>))
+    <span style=color:#66d9ef>if</span> (<span style=color:#a6e22e>node</span> <span style=color:#f92672>&amp;&amp;</span> <span style=color:#a6e22e>node</span>.<span style=color:#a6e22e>handler</span>) {
+      <span style=color:#a6e22e>node</span>.<span style=color:#a6e22e>handler</span>(<span style=color:#a6e22e>req</span>)
+    } <span style=color:#66d9ef>else</span> {
+      <span style=color:#a6e22e>req</span>.<span style=color:#a6e22e>respond</span>({ <span style=color:#a6e22e>body</span><span style=color:#f92672>:</span> <span style=color:#e6db74>&#39;404&#39;</span> })
+    }
+  }
+
+  <span style=color:#66d9ef>set</span>(<span style=color:#a6e22e>path</span>: <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>handler</span>: <span style=color:#66d9ef>TRouteHandler</span>) {
+    <span style=color:#66d9ef>this</span>.<span style=color:#960050;background-color:#1e0010>#</span><span style=color:#a6e22e>root</span>.<span style=color:#a6e22e>addNode</span>(<span style=color:#a6e22e>path</span>.<span style=color:#a6e22e>slice</span>(<span style=color:#ae81ff>1</span>).<span style=color:#a6e22e>split</span>(<span style=color:#66d9ef>this</span>.<span style=color:#a6e22e>routeSeperator</span>), <span style=color:#a6e22e>handler</span>)
+  }
+}
+</code></pre></div><p>The application code would remain the same.</p><p>You may notice that there are some sequential nodes they don&rsquo;t serve any route handlers. Can we condense them into one node to reduce the amount of nodes we need? The answer is certainly yes.</p><p>The simplest way should be increase the information stored in a single node. In the above example, we only store a single letter in each node. We could change this behavior by storing the complete URL segments into one node. This would significantly reduce the amount of nodes in our simple case.</p><p>Just change the value of <code>routeSeperator</code> to <code>'/'</code> and we are done!</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#75715e>// router.ts
+</span><span style=color:#75715e></span><span style=color:#66d9ef>export</span> <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>TrieRouter</span> {
+  <span style=color:#75715e>// ...
+</span><span style=color:#75715e></span>  <span style=color:#a6e22e>routeSeperator</span>: <span style=color:#66d9ef>string</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;/&#39;</span>
+  <span style=color:#75715e>// ...
+</span><span style=color:#75715e></span>}
+</code></pre></div><p>And in this way, we could easily handle dynamic route parameters. We add a <code>isParam</code> property to <code>TrieNode</code> to indicate whether this node represents a named parameter, and default it to false. Also we need a <code>paramIdentifier</code> property on the parent node to let us find the named parameter node easily:</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#75715e>// router.ts
+</span><span style=color:#75715e></span><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>TrieNode</span> {
+  <span style=color:#75715e>// ...
+</span><span style=color:#75715e></span>  <span style=color:#a6e22e>isParam</span>: <span style=color:#66d9ef>boolean</span> <span style=color:#f92672>=</span> <span style=color:#66d9ef>false</span>
+  <span style=color:#a6e22e>paramIdentifier?</span>: <span style=color:#66d9ef>string</span>
+  <span style=color:#75715e>// ...
+</span><span style=color:#75715e></span>}
+</code></pre></div><p>In <code>addNode</code>, we decide whether the node to be added represents a named parameter by checking whether the segment starts with &lsquo;:&rsquo;.</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#75715e>// router.ts
+</span><span style=color:#75715e></span><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>TrieNode</span> {
+  <span style=color:#75715e>// ...
+</span><span style=color:#75715e></span>  <span style=color:#a6e22e>addNode</span>(<span style=color:#a6e22e>paths</span>: <span style=color:#66d9ef>string</span>[], <span style=color:#a6e22e>handler</span>: <span style=color:#66d9ef>TRouteHandler</span>) {
+    <span style=color:#66d9ef>let</span> <span style=color:#a6e22e>identifier</span> <span style=color:#f92672>=</span> <span style=color:#a6e22e>paths</span>.<span style=color:#a6e22e>shift</span>() <span style=color:#66d9ef>as</span> <span style=color:#66d9ef>string</span>
+    <span style=color:#66d9ef>const</span> <span style=color:#a6e22e>isParam</span> <span style=color:#f92672>=</span> <span style=color:#a6e22e>identifier</span>.<span style=color:#a6e22e>startsWith</span>(<span style=color:#e6db74>&#39;:&#39;</span>)
+    <span style=color:#66d9ef>if</span> (<span style=color:#a6e22e>isParam</span>) {
+      <span style=color:#a6e22e>identifier</span> <span style=color:#f92672>=</span> <span style=color:#a6e22e>identifier</span>.<span style=color:#a6e22e>slice</span>(<span style=color:#ae81ff>1</span>)
+      <span style=color:#66d9ef>this</span>.<span style=color:#a6e22e>paramIdentifier</span> <span style=color:#f92672>=</span> <span style=color:#a6e22e>identifier</span>
+    }
+    <span style=color:#66d9ef>let</span> <span style=color:#a6e22e>node</span> <span style=color:#f92672>=</span> <span style=color:#66d9ef>this</span>.<span style=color:#960050;background-color:#1e0010>#</span><span style=color:#a6e22e>children</span>.<span style=color:#66d9ef>get</span>(<span style=color:#a6e22e>identifier</span>)
+    <span style=color:#66d9ef>if</span> (<span style=color:#f92672>!</span><span style=color:#a6e22e>node</span>) {
+      <span style=color:#a6e22e>node</span> <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> <span style=color:#a6e22e>TrieNode</span>(<span style=color:#a6e22e>identifier</span>)
+      <span style=color:#66d9ef>if</span> (<span style=color:#a6e22e>isParam</span>) {
+        <span style=color:#a6e22e>node</span>.<span style=color:#a6e22e>isParam</span> <span style=color:#f92672>=</span> <span style=color:#66d9ef>true</span>
+      }
+      <span style=color:#66d9ef>this</span>.<span style=color:#960050;background-color:#1e0010>#</span><span style=color:#a6e22e>children</span>.<span style=color:#66d9ef>set</span>(<span style=color:#a6e22e>identifier</span>, <span style=color:#a6e22e>node</span>)
+    }
+    <span style=color:#66d9ef>if</span> (<span style=color:#f92672>!</span><span style=color:#a6e22e>paths</span>.<span style=color:#a6e22e>length</span>) {
+      <span style=color:#a6e22e>node</span>.<span style=color:#a6e22e>handler</span> <span style=color:#f92672>=</span> <span style=color:#a6e22e>handler</span>
+    }
+    <span style=color:#66d9ef>if</span> (<span style=color:#a6e22e>paths</span>.<span style=color:#a6e22e>length</span>) <span style=color:#a6e22e>node</span>.<span style=color:#a6e22e>addNode</span>(<span style=color:#a6e22e>paths</span>, <span style=color:#a6e22e>handler</span>)
+  }
+  <span style=color:#75715e>// ...
+</span><span style=color:#75715e></span>}
+</code></pre></div><p>And then we should change the signature of <code>TRouteHandler</code>, add an extra object parameter <code>params</code> where we could store all the route parameters of a request.</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#75715e>// router.ts
+</span><span style=color:#75715e></span><span style=color:#66d9ef>export</span> <span style=color:#66d9ef>interface</span> <span style=color:#a6e22e>IRouteParameters</span> {
+  [<span style=color:#a6e22e>key</span>: <span style=color:#66d9ef>string</span>]<span style=color:#f92672>:</span> <span style=color:#66d9ef>string</span>
+}
+
+<span style=color:#66d9ef>type</span> <span style=color:#a6e22e>TRouteHandler</span> <span style=color:#f92672>=</span> (<span style=color:#a6e22e>req</span>: <span style=color:#66d9ef>ServerRequest</span>, <span style=color:#a6e22e>params?</span>: <span style=color:#66d9ef>IRouteParameters</span>) <span style=color:#f92672>=&gt;</span> <span style=color:#66d9ef>void</span>
+</code></pre></div><p>Next we modify the <code>walk</code> method to find the parameters, and pass them down if any:</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#75715e>// router.ts
+</span><span style=color:#75715e></span><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>TrieNode</span> {
+  <span style=color:#75715e>// ...
+</span><span style=color:#75715e></span>  <span style=color:#a6e22e>walk</span>(<span style=color:#a6e22e>paths</span>: <span style=color:#66d9ef>string</span>[], <span style=color:#a6e22e>params?</span>: <span style=color:#66d9ef>IRouteParameters</span>) <span style=color:#f92672>:</span> [<span style=color:#a6e22e>TrieNode</span> <span style=color:#f92672>|</span> <span style=color:#66d9ef>null</span>, <span style=color:#a6e22e>IRouteParameters</span> <span style=color:#f92672>|</span> <span style=color:#66d9ef>undefined</span>] {
+    <span style=color:#66d9ef>if</span> (<span style=color:#f92672>!</span><span style=color:#a6e22e>paths</span>.<span style=color:#a6e22e>length</span>) <span style=color:#66d9ef>return</span> [<span style=color:#66d9ef>this</span>, <span style=color:#a6e22e>params</span>]
+    <span style=color:#66d9ef>const</span> <span style=color:#a6e22e>identifier</span> <span style=color:#f92672>=</span> <span style=color:#a6e22e>paths</span>.<span style=color:#a6e22e>shift</span>() <span style=color:#66d9ef>as</span> <span style=color:#66d9ef>string</span>
+    <span style=color:#66d9ef>let</span> <span style=color:#a6e22e>node</span> <span style=color:#f92672>=</span> <span style=color:#66d9ef>this</span>.<span style=color:#960050;background-color:#1e0010>#</span><span style=color:#a6e22e>children</span>.<span style=color:#66d9ef>get</span>(<span style=color:#a6e22e>identifier</span>)
+    <span style=color:#66d9ef>if</span> (<span style=color:#f92672>!</span><span style=color:#a6e22e>node</span> <span style=color:#f92672>&amp;&amp;</span> <span style=color:#66d9ef>this</span>.<span style=color:#a6e22e>paramIdentifier</span>) {
+      <span style=color:#a6e22e>node</span> <span style=color:#f92672>=</span> <span style=color:#66d9ef>this</span>.<span style=color:#960050;background-color:#1e0010>#</span><span style=color:#a6e22e>children</span>.<span style=color:#66d9ef>get</span>(<span style=color:#66d9ef>this</span>.<span style=color:#a6e22e>paramIdentifier</span>)
+    }
+    <span style=color:#66d9ef>if</span> (<span style=color:#a6e22e>node</span> <span style=color:#f92672>&amp;&amp;</span> <span style=color:#a6e22e>node</span>.<span style=color:#a6e22e>isParam</span>) {
+      <span style=color:#66d9ef>if</span> (<span style=color:#f92672>!</span><span style=color:#a6e22e>params</span>) <span style=color:#a6e22e>params</span> <span style=color:#f92672>=</span> {}
+      <span style=color:#a6e22e>params</span>[<span style=color:#a6e22e>node</span>.<span style=color:#a6e22e>identifier</span>] <span style=color:#f92672>=</span> <span style=color:#a6e22e>identifier</span>
+    }
+    <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>node</span> <span style=color:#f92672>?</span> <span style=color:#a6e22e>node</span>.<span style=color:#a6e22e>walk</span>(<span style=color:#a6e22e>paths</span>, <span style=color:#a6e22e>params</span>) <span style=color:#f92672>:</span> [<span style=color:#66d9ef>null</span>, <span style=color:#a6e22e>params</span>]
+  }
+  <span style=color:#75715e>// ...
+</span><span style=color:#75715e></span>}
+</code></pre></div><p>Finally, in <code>TrieRouter</code>, we modify <code>handle</code> to allow receiving both node and params return from <code>walk</code> and pass them to the handler:</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#75715e>// router.ts
+</span><span style=color:#75715e></span><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>TrieRouter</span> {
+  <span style=color:#75715e>// ...
+</span><span style=color:#75715e></span>  <span style=color:#a6e22e>handle</span>(<span style=color:#a6e22e>req</span>: <span style=color:#66d9ef>ServerRequest</span>) {
+    <span style=color:#66d9ef>const</span> [<span style=color:#a6e22e>node</span>, <span style=color:#a6e22e>params</span>] <span style=color:#f92672>=</span> <span style=color:#66d9ef>this</span>.<span style=color:#960050;background-color:#1e0010>#</span><span style=color:#a6e22e>root</span>.<span style=color:#a6e22e>walk</span>(<span style=color:#a6e22e>req</span>.<span style=color:#a6e22e>url</span>.<span style=color:#a6e22e>slice</span>(<span style=color:#ae81ff>1</span>).<span style=color:#a6e22e>split</span>(<span style=color:#66d9ef>this</span>.<span style=color:#a6e22e>routeSeperator</span>))
+    <span style=color:#66d9ef>if</span> (<span style=color:#a6e22e>node</span> <span style=color:#f92672>&amp;&amp;</span> <span style=color:#a6e22e>node</span>.<span style=color:#a6e22e>handler</span>) {
+      <span style=color:#a6e22e>node</span>.<span style=color:#a6e22e>handler</span>(<span style=color:#a6e22e>req</span>, <span style=color:#a6e22e>params</span>)
+    } <span style=color:#66d9ef>else</span> {
+      <span style=color:#a6e22e>req</span>.<span style=color:#a6e22e>respond</span>({ <span style=color:#a6e22e>body</span><span style=color:#f92672>:</span> <span style=color:#e6db74>&#39;404&#39;</span> })
+    }
+  }
+  <span style=color:#75715e>// ...
+</span><span style=color:#75715e></span>}
+</code></pre></div><p>Now, we can use dynamic route parameters in our server:</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-typescript data-lang=typescript><span style=color:#75715e>// ...
+</span><span style=color:#75715e></span><span style=color:#a6e22e>router</span>.<span style=color:#66d9ef>set</span>(<span style=color:#e6db74>&#39;/dog&#39;</span>, (<span style=color:#a6e22e>req</span>: <span style=color:#66d9ef>ServerRequest</span>) <span style=color:#f92672>=&gt;</span> {
+  <span style=color:#a6e22e>req</span>.<span style=color:#a6e22e>respond</span>({ <span style=color:#a6e22e>body</span><span style=color:#f92672>:</span> <span style=color:#e6db74>&#39;Hello dog&#39;</span> })
+})
+<span style=color:#a6e22e>router</span>.<span style=color:#66d9ef>set</span>(<span style=color:#e6db74>&#39;/pig&#39;</span>, (<span style=color:#a6e22e>req</span>: <span style=color:#66d9ef>ServerRequest</span>) <span style=color:#f92672>=&gt;</span> {
+  <span style=color:#a6e22e>req</span>.<span style=color:#a6e22e>respond</span>({ <span style=color:#a6e22e>body</span><span style=color:#f92672>:</span> <span style=color:#e6db74>&#39;Hello pig&#39;</span>})
+})
+<span style=color:#a6e22e>router</span>.<span style=color:#66d9ef>set</span>(<span style=color:#e6db74>&#39;/pig/:id&#39;</span>, (<span style=color:#a6e22e>req</span>: <span style=color:#66d9ef>ServerRequest</span>, <span style=color:#a6e22e>params?</span>: <span style=color:#66d9ef>IRouteParameters</span>) <span style=color:#f92672>=&gt;</span> {
+  <span style=color:#a6e22e>req</span>.<span style=color:#a6e22e>respond</span>({ <span style=color:#a6e22e>body</span><span style=color:#f92672>:</span> <span style=color:#e6db74>&#39;Hello pig &#39;</span> <span style=color:#f92672>+</span> <span style=color:#a6e22e>params</span><span style=color:#f92672>!</span>.<span style=color:#a6e22e>id</span> })
+})
+<span style=color:#75715e>// ...
+</span></code></pre></div><h3 id=radix-tree>Radix tree<a href=#radix-tree class=hanchor arialabel=Anchor>&#8983;</a></h3><p>The last section of the article would introduce HTTP router implemented using <a href=https://en.wikipedia.org/wiki/Radix_tree>radix tree</a>, which is <code>a space-optimized trie</code> and it&rsquo;s really fit with URL routing.</p><p>In a radix tree, non-leaf nodes in a single branch could be condense into one. That means, nodes might be broken up or united together whenever you add or remove routes.</p><p>In conclusion, using a radix tree would take more time to operate but less space.</p></div></div><div class=pagination><div class=pagination__title><span class=pagination__title-h>Read other posts</span><hr></div><div class=pagination__buttons><span class="button next"><a href=/rona/posts/repairing-partition-with-inputoutput-error/><span class=button__text>Repairing partition with input/output error</span>
+<span class=button__icon>→</span></a></span></div></div></div></div><footer class=footer><div class=footer__inner><div class=copyright><span>© 2020 Powered by <a href=http://gohugo.io>Hugo</a></span>
+<span>:: Theme made by <a href=https://twitter.com/panr>panr</a></span></div></div></footer><script src=/rona/assets/main.js></script><script src=/rona/assets/prism.js></script></div></body></html>
